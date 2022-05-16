@@ -257,7 +257,7 @@ func TestEth_GetFilterChanges_WrongID(t *testing.T) {
 
 	err = res.Body.Close()
 	require.NoError(t, err)
-	require.NotNil(t, "invalid filter ID", rpcRes.Error.Message)
+	require.NotNil(t, rpcRes.Error.Message, "invalid filter ID")
 }
 
 // sendTestTransaction sends a dummy transaction
