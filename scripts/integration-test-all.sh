@@ -53,13 +53,15 @@ done
 
 set -euxo pipefail
 
-DATA_DIR=$(mktemp -d -t ethermint-datadir.XXXXX)
+DATA_DIR=/tmp/chibaclonk-datadir.KEEP
+rm -rf "$DATA_DIR"
+mkdir -p "$DATA_DIR"
 
-DATA_DIR=$(mktemp -d -t chibaclonk-datadir.XXXXX)
-if [[ ! "$DATA_DIR" ]]; then
-    echo "Could not create $DATA_DIR"
-    exit 1
-fi
+# DATA_DIR=$(mktemp -d -t chibaclonk-datadir.XXXXX)
+# if [[ ! "$DATA_DIR" ]]; then
+#     echo "Could not create $DATA_DIR"
+#     exit 1
+# fi
 
 # Compile chibaclonk
 echo "compiling chibaclonk"
@@ -69,6 +71,7 @@ make build
 arr=()
 
 init_func() {
+    rm -rf "$DATA_DIR$i"
     "$PWD"/build/chibaclonkd keys add $KEY"$i" --keyring-backend test --home "$DATA_DIR$i" --no-backup --algo "eth_secp256k1"
     "$PWD"/build/chibaclonkd init $MONIKER --chain-id $CHAINID --home "$DATA_DIR$i"
     "$PWD"/build/chibaclonkd add-genesis-account \
@@ -157,7 +160,7 @@ if [[ -z $TEST || $TEST == "integration" ]] ; then
 fi
 
 if [[ -z $TEST || $TEST == "rpc" ||  $TEST == "pending" ]]; then
-    time_out=300s
+    time_out=60m0s
     if [[ $TEST == "pending" ]]; then
       time_out=60m0s
     fi
@@ -165,9 +168,11 @@ if [[ -z $TEST || $TEST == "rpc" ||  $TEST == "pending" ]]; then
     for i in $(seq 1 "$TEST_QTD"); do
         HOST_RPC=http://$IP_ADDR:$RPC_PORT"$i"
         echo "going to test chibaclonk node $HOST_RPC ..."
-        MODE=$MODE HOST=$HOST_RPC go test ./tests/rpc/... -timeout=$time_out -v -short
+        go test ./tests/rpc/... -c -gcflags 'all=-N -l' -o ./rpc.test
+        MODE=$MODE HOST=$HOST_RPC ./rpc.test -test.timeout=$time_out -test.v -test.short
 
         TEST_FAIL=$?
+        rm ./rpc.test
     done
 fi
 

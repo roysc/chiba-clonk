@@ -37,6 +37,10 @@ var (
 )
 
 func TestMain(m *testing.M) {
+	delay := 5 * time.Second
+	fmt.Printf("Waiting %v for debugger to attach\n", delay)
+	time.Sleep(delay)
+
 	if MODE != "rpc" {
 		_, _ = fmt.Fprintln(os.Stdout, "Skipping RPC test")
 		return
@@ -302,6 +306,8 @@ func deployTestContract(t *testing.T) (hexutil.Bytes, map[string]interface{}) {
 }
 
 func waitForReceipt(t *testing.T, hash hexutil.Bytes) map[string]interface{} {
+	t.Log("waiting for tx:", hash)
+
 	timeout := time.After(12 * time.Second)
 	ticker := time.Tick(500 * time.Millisecond)
 
